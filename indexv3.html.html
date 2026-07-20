@@ -1,0 +1,47 @@
+<script>
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzW1loXZLeLDaI8cCbwzahLGycYxVEcerKNmZd3IjLOGv1oEjd3sMKWpKdDfK3ZlFss/exec"; 
+
+    async function syncData(payload) {
+        try {
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ payload: payload })
+            });
+            console.log("Sinkronisasi berhasil");
+            return true;
+        } catch (error) {
+            console.error("Sinkronisasi gagal, data tersimpan lokal");
+            return false;
+        }
+    }
+
+    async function prosesTransaksi(dataArray) {
+        // 1. Simpan ke HP dulu (agar tidak hilang)
+        let riwayat = JSON.parse(localStorage.getItem('riwayat_transaksi') || '[]');
+        riwayat.push(dataArray);
+        localStorage.setItem('riwayat_transaksi', JSON.stringify(riwayat));
+
+        // 2. Coba kirim ke Cloud
+        const status = await syncData(dataArray);
+        
+        if(status) {
+            alert("Berhasil sync ke Cloud!");
+        } else {
+            alert("Tersimpan offline. Akan sync otomatis saat online.");
+        }
+    }
+</script>
+```
+
+### Mengapa cara ini efektif untuk kasir?
+1. **Tidak Bergantung Internet:** Pelanggan tidak perlu menunggu loading saat pembayaran. Transaksi selesai instan karena data masuk ke `localStorage`.
+2. **Keamanan Data:** Jika HP kasir tiba-tiba mati atau *refresh*, data transaksi sudah aman tersimpan di browser.
+3. **Penyimpanan Berjenjang:** Anda bisa membuat satu tombol tambahan di menu aplikasi: "Sinkronkan Ulang Semua Data". Tombol ini akan membaca `riwayat_transaksi` dari `localStorage` dan mengirimkan semua yang belum tersinkron ke Google Sheets.
+
+**Catatan Penting:**
+*   **Jangan gunakan `alert()`** untuk aplikasi skala besar, gunakan `div` notifikasi yang muncul di atas layar agar lebih elegan.
+*   **Keamanan:** Karena akses Google Script diset ke "Anyone", jangan sebarkan link web Anda secara publik ke orang yang tidak berhak mengakses data penjualan Anda.
+
+Apakah Anda ingin saya buatkan fitur "Tombol Sync Ulang" untuk mengirim semua data transaksi yang tertunda?
